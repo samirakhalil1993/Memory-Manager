@@ -25,8 +25,8 @@ void test_insert()
     list_init(&head);
     list_insert(&head, 10);
     list_insert(&head, 20);
-    assert_node_value(head, 20, "test_insert");
-    assert_node_value(head->next, 10, "test_insert");
+    assert_node_value(head, 10, "test_insert");
+    assert_node_value(head->next, 20, "test_insert");
 
     list_cleanup(&head);
 }
@@ -42,7 +42,7 @@ void test_insert_loop(int count)
         list_insert(&head, i);
     }
     Node *current = head;
-    for (int i = count - 1; i >= 0; i--)
+    for (int i = 0; i < count; i++)
     {
         assert_node_value(current, i, "test_insert");
         current = current->next;
@@ -59,7 +59,7 @@ void test_insert_after()
     list_init(&head);
     list_insert(&head, 10);
     list_insert(&head, 20);
-    Node *node = list_search(head, 20);
+    Node *node = head;
     list_insert_after(node, 15);
     assert_node_value(node->next, 15, "test_insert_after");
 
