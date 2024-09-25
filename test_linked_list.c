@@ -48,7 +48,7 @@ void test_list_init()
 {
     printf_yellow(" Testing list_init ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node));
     my_assert(head == NULL);
     list_cleanup(&head);
     printf_green("[PASS].\n");
@@ -58,7 +58,7 @@ void test_list_insert()
 {
     printf_yellow(" Testing list_insert ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 2);
     list_insert(&head, 10);
     list_insert(&head, 20);
     my_assert(head->data == 10);
@@ -71,7 +71,7 @@ void test_list_insert_after()
 {
     printf_yellow(" Testing list_insert_after ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 3);
     list_insert(&head, 10);
     Node *node = head;
     list_insert_after(node, 20);
@@ -85,7 +85,7 @@ void test_list_insert_before()
 {
     printf_yellow(" Testing list_insert_before ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 3);
     list_insert(&head, 10);
     list_insert(&head, 30);
     Node *node = head->next; // Node with data 30
@@ -100,7 +100,7 @@ void test_list_delete()
 {
     printf_yellow(" Testing list_delete ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 2);
     list_insert(&head, 10);
     list_insert(&head, 20);
     list_delete(&head, 10);
@@ -116,13 +116,13 @@ void test_list_search()
 {
     printf_yellow(" Testing list_search ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 2);
     list_insert(&head, 10);
     list_insert(&head, 20);
-    Node *found = list_search(head, 10);
+    Node *found = list_search(&head, 10);
     my_assert(found->data == 10);
 
-    Node *not_found = list_search(head, 30);
+    Node *not_found = list_search(&head, 30);
     my_assert(not_found == NULL);
 
     list_cleanup(&head);
@@ -133,7 +133,7 @@ void test_list_display()
 {
     printf_yellow(" Testing list_display ... \n");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 4);
     list_insert(&head, 10);
     list_insert(&head, 20);
     list_insert(&head, 30);
@@ -164,22 +164,6 @@ void test_list_display()
     my_assert(strcmp(buffer, "[20]") == 0);
     printf("\tSingle node: %s\n", buffer);
 
-    // // Test case 1: Displaying full list
-    // printf("\tFull list: ");
-    // list_display_range(&head, NULL, NULL);
-
-    // // Test case 2: Displaying list from second node to end
-    // printf("\n\tFrom second node to end: ");
-    // list_display_range(&head, head->next, NULL);
-
-    // // Test case 3: Displaying list from first node to third node
-    // printf("\n\tFrom first node to third node: ");
-    // list_display_range(&head, head, head->next->next);
-
-    // // Test case 4: Displaying a single node (second node)
-    // printf("\n\tSingle node: ");
-    // list_display_range(&head, head->next, head->next);
-
     list_cleanup(&head);
     printf_green("\n... [PASS].\n");
 }
@@ -188,7 +172,7 @@ void test_list_count_nodes()
 {
     printf_yellow(" Testing list_count_nodes ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 3);
     list_insert(&head, 10);
     list_insert(&head, 20);
     list_insert(&head, 30);
@@ -204,7 +188,7 @@ void test_list_cleanup()
 {
     printf_yellow(" Testing list_cleanup ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 3);
     list_insert(&head, 10);
     list_insert(&head, 20);
     list_insert(&head, 30);
@@ -220,7 +204,7 @@ void test_list_insert_loop(int count)
 {
     printf_yellow(" Testing list_insert loop ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * count);
     for (int i = 0; i < count; i++)
     {
         list_insert(&head, i);
@@ -241,10 +225,10 @@ void test_list_insert_after_loop(int count)
 {
     printf_yellow(" Testing list_insert_after loop ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * (count + 1));
     list_insert(&head, 12345);
 
-    Node *node = list_search(head, 12345);
+    Node *node = list_search(&head, 12345);
     for (int i = 0; i < count; i++)
     {
         list_insert_after(node, i);
@@ -268,7 +252,7 @@ void test_list_delete_loop(int count)
 {
     printf_yellow(" Testing list_delete loop ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * count);
     for (int i = 0; i < count; i++)
     {
         list_insert(&head, i);
@@ -289,7 +273,7 @@ void test_list_search_loop(int count)
 {
     printf_yellow(" Testing list_search loop ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * count);
     for (int i = 0; i < count; i++)
     {
         list_insert(&head, i);
@@ -297,7 +281,7 @@ void test_list_search_loop(int count)
 
     for (int i = 0; i < count; i++)
     {
-        Node *found = list_search(head, i);
+        Node *found = list_search(&head, i);
         my_assert(found->data == i);
     }
 
@@ -309,14 +293,14 @@ void test_list_edge_cases()
 {
     printf_yellow(" Testing list edge cases ---> ");
     Node *head = NULL;
-    list_init(&head);
+    list_init(&head, sizeof(Node) * 3);
 
     // Insert at head
     list_insert(&head, 10);
     my_assert(head->data == 10);
 
     // Insert after
-    Node *node = list_search(head, 10);
+    Node *node = list_search(&head, 10);
     list_insert_after(node, 20);
     my_assert(node->next->data == 20);
 
@@ -332,7 +316,7 @@ void test_list_edge_cases()
     my_assert(node->next->data == 20);
 
     // Search
-    Node *found = list_search(head, 20);
+    Node *found = list_search(&head, 20);
     my_assert(found->data == 20);
 
     list_cleanup(&head);
