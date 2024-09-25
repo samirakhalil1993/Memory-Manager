@@ -6,6 +6,9 @@
 #include <time.h>
 #include "common_defs.h"
 
+const char *git_date = "2024-09-24 11:34";
+const char *git_sha = "150c96c222450f7e302881f565d97d2348baba59";
+
 void test_init()
 {
     printf_yellow(" Testing mem_init ---> ");
@@ -29,6 +32,52 @@ void test_alloc_and_free()
     mem_free(block1);
     mem_free(block2);
     mem_deinit();
+    printf_green("[PASS].\n");
+}
+
+void test_zero_alloc_and_free()
+{
+    printf_yellow("Testing mem_alloc(0) and mem_free...\n");
+    mem_init(1024);
+    void *block1 = mem_alloc(0);
+    my_assert(block1 != NULL);
+    void *block2 = mem_alloc(200);
+    my_assert(block2 != NULL);
+    my_assert(block1 == block2);
+
+    mem_free(block1);
+    mem_free(block2);
+    mem_deinit();
+    printf_green("mem_alloc(0) and mem_free passed.\n");
+}
+
+void test_random_blocks()
+{
+    printf_yellow("Testing random blocks and mem_free...\n");
+    srand(time(NULL));
+    int nBlocks = rand() % 40;
+    int blockSize = rand() % 1024;
+
+    int memSize = nBlocks * 1024;
+
+    mem_init(memSize);
+    void *blocks[nBlocks];
+
+    printf("Allocating; %d blocks, total %d bytes, max block size %d bytes\n", nBlocks, memSize, blockSize);
+    for (int k = 0; k < nBlocks; k++)
+    {
+        blocks[k] = mem_alloc(blockSize);
+        my_assert(blocks[k] != NULL);
+        blockSize = rand() % 1024;
+    }
+
+    printf("Releasing the blocks.\n");
+    for (int k = 0; k < nBlocks; k++)
+    {
+        mem_free(blocks[k]);
+    }
+    mem_free(blocks[0]);
+
     printf_green("[PASS].\n");
 }
 
@@ -179,7 +228,7 @@ void test_block_merging()
 void test_non_contiguous_allocation_failure()
 {
     printf_yellow(" Testing non-contiguous allocation failure ---> ");
-    mem_init(800); // Initialize with 1KB of memory
+    mem_init(800); // Initialize with 800 bytes of memory
 
     // Allocate several blocks to fragment the memory
     void *block1 = mem_alloc(250);
@@ -203,14 +252,18 @@ void test_contiguous_allocation_success()
     mem_init(1024); // Initialize with 1KB of memory
 
     // Allocate and then free a block to create a sufficiently large contiguous free block
-    void *block1 = mem_alloc(500);
-    mem_free(block1); // Create a large contiguous free space
+    void *block1 = mem_alloc(256);
+    void *block2 = mem_alloc(256);
+    void *block3 = mem_alloc(512);
+    mem_free(block1); // Free block1 and block2 to create a contiguous free space
+    mem_free(block2); // now block1 and block2 are contiguous
 
     // Try to allocate a block that fits into the freed space
-    void *block2 = mem_alloc(500);
+    void *block4 = mem_alloc(500);
     my_assert(block2 != NULL); // This allocation should succeed
 
-    mem_free(block2);
+    mem_free(block3);
+    mem_free(block4);
     mem_deinit();
     printf_green("[PASS].\n");
 }
@@ -233,14 +286,14 @@ void test_double_free()
 void test_memory_fragmentation()
 {
     printf_yellow(" Testing memory fragmentation handling ---> ");
-    mem_init(1024); // Initialize with 2048 bytes
+    mem_init(1024); // Initialize with 1024 bytes
 
     void *block1 = mem_alloc(200);
     void *block2 = mem_alloc(300);
     void *block3 = mem_alloc(500);
     mem_free(block1);              // Free first block
     mem_free(block3);              // Free third block, leaving a fragmented hole before and after block2
-    void *block4 = mem_alloc(500); // Should fit into the space of block1
+    void *block4 = mem_alloc(500); // Should fit into the space of block
     assert(block4 != NULL);
 
     mem_free(block2);
@@ -271,6 +324,11 @@ void test_edge_case_allocations()
 
 int main(int argc, char *argv[])
 {
+#ifdef VERSION
+    printf("Build Version; %s \n", VERSION);
+#endif
+    printf("Git Version; %s/%s \n", git_date, git_sha);
+
     if (argc < 2)
     {
         printf("Usage: %s <test function>\n", argv[0]);
@@ -302,6 +360,9 @@ int main(int argc, char *argv[])
 
     switch (atoi(argv[1]))
     {
+    case -1:
+        printf("No tests will be executed.\n");
+        break;
     case 0:
         // Running all tests
         printf("Testing Basic Operations:\n");
@@ -325,6 +386,10 @@ int main(int argc, char *argv[])
         test_block_merging();
         test_non_contiguous_allocation_failure();
         test_contiguous_allocation_success();
+
+        printf("\nVarious other tests:\n");
+        test_zero_alloc_and_free();
+        test_random_blocks();
         break;
     case 1:
         test_init();
@@ -373,6 +438,12 @@ int main(int argc, char *argv[])
         break;
     case 16:
         test_contiguous_allocation_success();
+        break;
+    case 17:
+        test_zero_alloc_and_free();
+        break;
+    case 18:
+        test_random_blocks();
         break;
     default:
         printf("Invalid test function\n");
