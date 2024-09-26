@@ -36,7 +36,6 @@ void mem_init(size_t size) {
     free_list->next = NULL;
 
     printf("Memory pool initialized with size: %zu bytes\n", size);
- //   print_memory_pool_status();  // Print the initial state of the memory pool
 }
 void* mem_alloc(size_t requested_size) {
     printf("Attempting to allocate %zu bytes\n", requested_size);
