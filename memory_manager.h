@@ -4,12 +4,7 @@
 #include <stddef.h>  // For size_t
 #include <stdbool.h> // For bool
 
-// Define the Block structure
-typedef struct Block {
-    size_t size;
-    bool is_free;
-    struct Block* next;
-} Block;
+
 
 // Declare memory management functions
 void mem_init(size_t size);

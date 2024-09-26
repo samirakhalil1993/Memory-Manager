@@ -7,7 +7,12 @@
 #include <stdlib.h>
 #include "common_defs.h"
 
-
+// Define the Block structure
+typedef struct Block {
+    size_t size;
+    bool is_free;
+    struct Block* next;
+} Block;
 
 
 
@@ -26,7 +31,7 @@ void mem_init(size_t size) {
 
     memory_pool_size = size;
     free_list = (Block*)memory_pool;
-    free_list->size = size - sizeof(Block);
+    free_list->size = size ;
     free_list->is_free = true;
     free_list->next = NULL;
 
@@ -37,7 +42,7 @@ void* mem_alloc(size_t requested_size) {
     printf("Attempting to allocate %zu bytes\n", requested_size);
     Block* current = free_list;
 
-    // Calculate the total size needed for this block, including metadata
+    // We only need to track the requested size, no need to add sizeof(Block) to it for the user
     size_t total_size = requested_size + sizeof(Block);
 
     while (current != NULL) {
@@ -46,7 +51,7 @@ void* mem_alloc(size_t requested_size) {
         // Check if the block is free and has enough space for requested_size + metadata
         if (current->is_free && current->size >= total_size) {
             // If the remaining space after allocation is large enough for a new block
-            size_t remaining_size = current->size - total_size;
+            size_t remaining_size = current->size ;
 
             if (remaining_size >= sizeof(Block)) {
                 // Split the block: create a new free block with the remaining space
@@ -55,9 +60,9 @@ void* mem_alloc(size_t requested_size) {
                 new_block->is_free = true;
                 new_block->next = current->next;
 
-                // Update the current block to reflect the allocated size
+                // Update the current block to reflect the exact allocated size
                 current->next = new_block;
-                current->size = requested_size; // Use only the requested size for this block
+                current->size = requested_size; // Only store the requested size in the current block
             } else {
                 // If there isn't enough space to create a new block, allocate the entire block
                 requested_size = current->size - sizeof(Block); // Adjust the size to the full block
@@ -66,7 +71,9 @@ void* mem_alloc(size_t requested_size) {
             // Mark the current block as allocated
             current->is_free = false;
             printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
-            return (char*)current + sizeof(Block); // Return the usable memory
+
+            // Return a pointer to the usable memory (just after the Block metadata)
+            return (char*)current + sizeof(Block);
         }
 
         current = current->next;
