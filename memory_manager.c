@@ -42,7 +42,7 @@ void* mem_alloc(size_t requested_size) {
     Block* current = free_list;
 
     // We only need to track the requested size, no need to add sizeof(Block) to it for the user
-    size_t total_size = requested_size + sizeof(Block);
+    size_t total_size = requested_size;
 
     while (current != NULL) {
         printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
@@ -50,7 +50,7 @@ void* mem_alloc(size_t requested_size) {
         // Check if the block is free and has enough space for requested_size + metadata
         if (current->is_free && current->size >= total_size) {
             // If the remaining space after allocation is large enough for a new block
-            size_t remaining_size = current->size ;
+            size_t remaining_size = current->size - total_size;
 
             if (remaining_size >= sizeof(Block)) {
                 // Split the block: create a new free block with the remaining space
@@ -81,10 +81,6 @@ void* mem_alloc(size_t requested_size) {
     printf("Memory allocation failed: no suitable block found.\n");
     return NULL;
 }
-
-
-
-
 
 void mem_free(void* block) {
     if (block == NULL) return;
