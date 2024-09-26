@@ -2,8 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
+
 
 #include "common_defs.h"
+#include "gitdata.h"
+
+
 
 // Function to capture stdout output.
 void capture_stdout(char *buffer, size_t size, void (*func)(Node **, Node *, Node *), Node **head, Node *start_node, Node *end_node)
@@ -133,37 +138,188 @@ void test_list_display()
 {
     printf_yellow(" Testing list_display ... \n");
     Node *head = NULL;
-    list_init(&head, sizeof(Node) * 4);
-    list_insert(&head, 10);
-    list_insert(&head, 20);
-    list_insert(&head, 30);
-    list_insert(&head, 40);
 
+    int Nnodes=3+rand()%10;
+    int entries=5+rand()%5;
+    
+    list_init(&head, sizeof(Node) * Nnodes);
+
+    printf_yellow("  Testing %d nodes, and %d entries.\n", Nnodes, entries);
+
+    int randomLow=rand()%entries;
+
+    //    randomLow=0;
+    
+    int randomHigh=randomLow+rand()%(entries-randomLow);
+    while(randomHigh==0){
+      randomHigh=randomLow+rand()%(entries-randomLow);
+    }
+
+
+
+#ifdef DEBUG
+    int Delta=randomHigh-randomLow;
+    printf("Random [%d,%d] delta= %d \n", randomLow, randomHigh,Delta);
+#endif    
+
+
+
+    char *stringFull=malloc(1024);
+    char *string2Last=malloc(1024);
+    char *string1third=malloc(1024);
+    char *stringRandom=malloc(1024);
+    
+    sprintf(stringFull, "[");
+    sprintf(string2Last, "[");
+
+    Node *Low=NULL;
+    Node *High=NULL;
+    char LowValue[10];
+    char HighValue[10];
+    
+    
+    int values[entries];
+    for (int i=0;i<entries;i++)
+      {
+	values[i]=0;
+      }
+    for(int k=0;k<entries;k++){
+      values[k]=10+rand()%90;
+      list_insert(&head, values[k]);
+      if (k==randomLow && !Low){
+	Low=list_search(&head, values[k]);
+	sprintf(LowValue,"%d",values[k]);
+      }
+      if (k==randomHigh && !High){
+	High=list_search(&head, values[k]);
+	sprintf(HighValue,"%d",values[k]);
+      }
+      sprintf(stringFull+strlen(stringFull),"%d",values[k]);
+      if ( k<(entries-1) ){
+	sprintf(stringFull+strlen(stringFull),", ");
+      } else {
+	sprintf(stringFull+strlen(stringFull),"]");
+      }
+      
+    }
+
+#ifdef DEBUG      
+    printf("LowValue=%s, HighValue=%s\n",LowValue,HighValue);
+    printf("RefFull:'%s'\n",stringFull);
+#endif
+    
+    // [N0, N1, ...., NL]
+    sprintf(string2Last+1,"%s",strchr(stringFull,',')+2);
+
+
+    //    printf("ref2Last: '%s\n", string2Last);
+    
+    // [N0, N1, ...., NL]
+    char *Third=stringFull;
+    for(int i=0; i<3;i++){
+      Third=strchr(Third,',');
+      Third+=1;
+    }
+    int LenToThird=((Third-stringFull));
+
+    strncpy(string1third, stringFull, LenToThird-1);
+    sprintf(string1third+strlen(string1third),"]");
+   
+    //printf("ref1third: '%s\n", string1third);
+
+
+    char *start=0;
+    char *first=0;
+    char *last=0;
+
+    
+    //Find first random node.
+    start=strstr(stringFull, LowValue);
+    first=strstr(stringFull, HighValue);
+    if (strlen(first)>3) {
+      // We have atleast one number after us.
+#ifdef DEBUG            
+      printf("Last isnt last.\n");
+#endif
+      last=strstr(first," ");
+    } else {
+      //We are the last number.
+#ifdef DEBUG            
+      printf("Last was last.\n");
+#endif
+      last=strstr(first,"]");
+    }
+    
+    
+    ptrdiff_t LenToFirst=((char *)start-(char *)stringFull);    
+    ptrdiff_t LenToLast=((char *)last-(char *)stringFull);
+
+#ifdef DEBUG
+    printf("random starts at %p (offset=%ld) and ends at %p (offset=%ld).\n", start,LenToFirst,last,LenToLast);
+    printf("random: '%s' \n", start);
+
+#endif
+
+
+    char *blob=malloc(1024);
+    strncpy(blob, start, LenToLast-LenToFirst);
+    
+    sprintf(stringRandom,"[%s",blob);
+    if(!strchr(stringRandom,']')){
+      sprintf(stringRandom+strlen(stringRandom),"]");
+    }
+    if( strstr(stringRandom,",]") ){
+      //Solution change ",]" to "]\0";
+      char *ptr=strstr(stringRandom,",]");
+      sprintf(ptr,"]");
+      memset(ptr+1,0,1);
+#ifdef DEBUG      
+      printf("We have a problem Huston.\n");
+      printf("Fixed ,] issue.\n");a
+#endif    
+				    
+    }
+
+    if( strstr(stringRandom,", ]") ){
+#ifdef DEBUG
+      printf("We have a problem Huston2.\n");
+#endif      
+    }
+
+    
+    //    printf("RefRandom: '%s' \n\n", stringRandom);
+
+    
     char buffer[1024] = {0}; // Buffer to capture the output
 
     // Test case 1: Displaying full list
     capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, NULL, NULL);
-    my_assert(strcmp(buffer, "[10, 20, 30, 40]") == 0);
+    my_assert(strcmp(buffer, stringFull) == 0);
     printf("\tFull list: %s\n", buffer);
 
+    
+
+    
     // Test case 2: Displaying list from second node to end
     memset(buffer, 0, sizeof(buffer)); // Clear buffer
     capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, head->next, NULL);
-    my_assert(strcmp(buffer, "[20, 30, 40]") == 0);
+    my_assert(strcmp(buffer, string2Last) == 0);
     printf("\tFrom second node to end: %s\n", buffer);
 
     // Test case 3: Displaying list from first node to third node
     memset(buffer, 0, sizeof(buffer)); // Clear buffer
     capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, head, head->next->next);
-    my_assert(strcmp(buffer, "[10, 20, 30]") == 0);
+    my_assert(strcmp(buffer, string1third) == 0);
     printf("\tFrom first node to third node: %s\n", buffer);
 
-    // Test case 4: Displaying a single node (second node)
+    // Test case 4: Displaying random nodes
     memset(buffer, 0, sizeof(buffer)); // Clear buffer
-    capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, head->next, head->next);
-    my_assert(strcmp(buffer, "[20]") == 0);
-    printf("\tSingle node: %s\n", buffer);
+    capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, Low, High);
+    my_assert(strcmp(buffer, stringRandom) == 0);
+    printf("\tK random node(s): %s\n", buffer );
 
+
+    
     list_cleanup(&head);
     printf_green("\n... [PASS].\n");
 }
@@ -326,6 +482,12 @@ void test_list_edge_cases()
 // Main function to run all tests
 int main(int argc, char *argv[])
 {
+
+  srand(time(NULL));
+#ifdef VERSION
+  printf("Build Version; %s \n", VERSION);
+#endif
+  printf("Git Version; %s/%s \n", git_date, git_sha);
     if (argc < 2)
     {
         printf("Usage: %s <test function>\n", argv[0]);
@@ -353,6 +515,9 @@ int main(int argc, char *argv[])
 
     switch (atoi(argv[1]))
     {
+    case -1:
+      printf("No tests will be executed.\n");      
+      break;
     case 0:
         printf("Testing Basic Operations:\n");
         test_list_init();

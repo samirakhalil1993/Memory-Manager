@@ -6,8 +6,8 @@
 #include <time.h>
 #include "common_defs.h"
 
-const char *git_date = "2024-09-24 11:34";
-const char *git_sha = "150c96c222450f7e302881f565d97d2348baba59";
+#include "gitdata.h"
+
 
 void test_init()
 {
