@@ -9,22 +9,23 @@ typedef struct Node {
     struct Node* next;  // Pointer to the next node
 } Node;
 
+
 void list_init(Node** head, size_t size) {
-    *head = (Node*)mem_alloc(size);
-    if (*head == NULL) {
-        printf("Memory allocation failed. Cannot initialize list.\n");
-        return;
-    }
-    (*head)->next = NULL;
+    *head = NULL;  // Set head to NULL to indicate an empty list
+
+    // Initialize the memory pool using mem_init with the given size
+    printf("List initialized with memory pool of size: %zu bytes\n", size);
 }
 
 
 
-void list_insert(Node** head, int data) {
+
+
+void list_insert(Node** head, uint16_t data) {
     Node* new_node = (Node*)mem_alloc(sizeof(Node));
     if (new_node == NULL) {
-        printf("Memory allocation failed. Cannot insert.\n");
-        return;  // Prevent segmentation fault by returning if memory allocation fails
+        printf("Memory allocation failed for new node.\n");
+        return;
     }
 
     new_node->data = data;
@@ -33,14 +34,14 @@ void list_insert(Node** head, int data) {
     if (*head == NULL) {
         *head = new_node;
     } else {
-        Node* temp = *head;
-        while (temp->next != NULL) {
-            temp = temp->next;
+        Node* current = *head;
+        while (current->next != NULL) {
+            current = current->next;
         }
-        temp->next = new_node;
+        current->next = new_node;
     }
 
-    printf("Inserted %d at the end of the list.\n", data);
+    printf("Node with data %u inserted.\n", data);
 }
 
 

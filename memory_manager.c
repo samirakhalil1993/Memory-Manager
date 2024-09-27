@@ -40,51 +40,42 @@ void mem_init(size_t size) {
 
 
 void* mem_alloc(size_t requested_size) {
-    printf("Attempting to allocate %zu bytes\n", requested_size);
-    Block* current = free_list;
-
-    // Handle the edge case where 0 bytes are requested
-    //if (requested_size == 0) {
-    //    requested_size = 1;  // Allocate a minimal block to handle 0-byte requests
-    //}
-
-    // Traverse the free list to find a suitable block
-    while (current != NULL) {
-        printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
-
-        // Check if the block is free and has enough space for the requested size
-        if (current->is_free && current->size >= requested_size) {
-            // Calculate the remaining size after allocation
-            size_t remaining_size = current->size - requested_size;
-
-            // If there is enough space to split the block
-            if (remaining_size > sizeof(Block)) {
-                Block* new_block = (Block*)((char*)current + requested_size + sizeof(Block));
-                new_block->size = remaining_size;
-                new_block->is_free = true;
-                new_block->next = current->next;
-
-                current->next = new_block;
-                current->size = requested_size;
-            } else {
-                // Allocate the entire block
-                requested_size = current->size;
-            }
-
-            // Mark the current block as allocated
-            current->is_free = false;
-            printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
-
-            // Return a pointer to the usable memory (just after the block metadata)
-            return (char*)current + sizeof(Block);
-        }
-
-        current = current->next;
-    }
-
-    // If no suitable block was found, return NULL
-    printf("Memory allocation failed: no suitable block found.\n");
-    return NULL;
+   printf("Attempting to allocate %zu bytes\n", requested_size);
+   Block* current = free_list;
+   // Handle the edge case where 0 bytes are requested
+   //if (requested_size == 0) {
+   //    requested_size = 1;  // Allocate a minimal block to handle 0-byte requests
+   //}
+   // Traverse the free list to find a suitable block
+   while (current != NULL) {
+       printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
+       // Check if the block is free and has enough space for the requested size
+       if (current->is_free && current->size >= requested_size) {
+           // Calculate the remaining size after allocation
+           size_t remaining_size = current->size - requested_size;
+           // If there is enough space to split the block
+           if (remaining_size > sizeof(Block)) {
+               Block* new_block = (Block*)((char*)current + requested_size + sizeof(Block));
+               new_block->size = remaining_size;
+               new_block->is_free = true;
+               new_block->next = current->next;
+               current->next = new_block;
+               current->size = requested_size;
+           } else {
+               // Allocate the entire block
+               requested_size = current->size;
+           }
+           // Mark the current block as allocated
+           current->is_free = false;
+           printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
+           // Return a pointer to the usable memory (just after the block metadata)
+           return (char*)current + sizeof(Block);
+       }
+       current = current->next;
+   }
+   // If no suitable block was found, return NULL
+   printf("Memory allocation failed: no suitable block found.\n");
+   return NULL;
 }
 
 void mem_free(void* block) {
