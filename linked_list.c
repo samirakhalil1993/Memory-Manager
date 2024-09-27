@@ -10,22 +10,16 @@ typedef struct Node {
 } Node;
 
 void list_init(Node** head, size_t size) {
-    *head = (Node*)mem_alloc(size); // Allocate the memory for the list of given size
+    *head = (Node*)mem_alloc(size);
     if (*head == NULL) {
         printf("Memory allocation failed. Cannot initialize list.\n");
         return;
     }
-
-    *head = NULL; // Initially, the list is empty
-    printf("List initialized with memory size: %zu bytes.\n", size);
+    (*head)->next = NULL;
 }
 
-/**
- * Inserts a new node with the specified data at the end of the list.
- *
- * @param head A pointer to the pointer of the head node of the list.
- * @param data The data to be inserted into the new node.
- */
+
+
 void list_insert(Node** head, int data) {
     Node* new_node = (Node*)mem_alloc(sizeof(Node));
     if (new_node == NULL) {

@@ -45,7 +45,7 @@ void* mem_alloc(size_t requested_size) {
 
     // Handle the edge case where 0 bytes are requested
     //if (requested_size == 0) {
-    //    requested_size = 0;  // Allocate a minimal block to handle 0-byte requests
+    //    requested_size = 1;  // Allocate a minimal block to handle 0-byte requests
     //}
 
     // Traverse the free list to find a suitable block
