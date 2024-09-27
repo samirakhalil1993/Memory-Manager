@@ -11,6 +11,7 @@ typedef struct Node {
 
 
 void list_init(Node** head, size_t size) {
+    mem_init(2048);
     *head = NULL;  // Set head to NULL to indicate an empty list
 
     // Initialize the memory pool using mem_init with the given size
@@ -22,18 +23,26 @@ void list_init(Node** head, size_t size) {
 
 
 void list_insert(Node** head, uint16_t data) {
-    Node* new_node = (Node*)mem_alloc(sizeof(Node));
+    printf("Inserting node with data %u\n", data);
+    
+    // Allocate memory for the new node using the custom memory manager
+    Node* new_node = (Node*)mem_alloc(data);
+    
+    // Check if memory allocation was successful
     if (new_node == NULL) {
         printf("Memory allocation failed for new node.\n");
         return;
     }
 
+    // Initialize the new node
     new_node->data = data;
     new_node->next = NULL;
 
+    // If the list is empty, make this new node the head
     if (*head == NULL) {
         *head = new_node;
     } else {
+        // Traverse to the end of the list and add the new node
         Node* current = *head;
         while (current->next != NULL) {
             current = current->next;
@@ -41,9 +50,8 @@ void list_insert(Node** head, uint16_t data) {
         current->next = new_node;
     }
 
-    printf("Node with data %u inserted.\n", data);
+    printf("Node with data %u inserted successfully.\n", data);
 }
-
 
 /**
  * Inserts a new node with the specified data immediately after the given node.
