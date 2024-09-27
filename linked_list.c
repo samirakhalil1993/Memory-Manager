@@ -21,13 +21,12 @@ void list_init(Node** head, size_t size) {
 
 
 
-
 void list_insert(Node** head, uint16_t data) {
     printf("Inserting node with data %u\n", data);
     
-    // Allocate memory for the new node using the custom memory manager
-    Node* new_node = (Node*)mem_alloc(data);
-    
+    // Allocate memory for the new node using the correct size (sizeof(Node))
+    Node* new_node = (Node*)mem_alloc(sizeof(Node));
+
     // Check if memory allocation was successful
     if (new_node == NULL) {
         printf("Memory allocation failed for new node.\n");
@@ -52,6 +51,7 @@ void list_insert(Node** head, uint16_t data) {
 
     printf("Node with data %u inserted successfully.\n", data);
 }
+
 
 /**
  * Inserts a new node with the specified data immediately after the given node.
