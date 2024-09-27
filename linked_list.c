@@ -177,23 +177,27 @@ Node* list_search(Node** head, int data) {
     printf("Node with data %d not found.\n", data);
     return NULL;
 }
-/**
- * Displays all the nodes in the list.
- *
- * @param head A pointer to the pointer of the head node of the list.
- */
 void list_display(Node** head) {
-    Node* temp = *head;
+    Node* current = *head;
+
+    // Print the opening bracket
     printf("[");
-    while (temp != NULL) {
-        printf("%d", temp->data);
-        if (temp->next != NULL) {
+
+    while (current != NULL) {
+        printf("%u", current->data);  // Print the data of the current node
+
+        if (current->next != NULL) {
+            // Print a comma if this is not the last node
             printf(", ");
         }
-        temp = temp->next;
+
+        current = current->next;  // Move to the next node
     }
+
+    // Print the closing bracket
     printf("]\n");
 }
+
 
 /**
  * Displays the nodes in the list within a specified range.
