@@ -294,6 +294,9 @@ void test_list_display()
 
     // Test case 1: Displaying full list
     capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, NULL, NULL);
+    // Add the print statements here
+    printf("Captured output: '%s'\n", buffer);
+    printf("Expected output: '%s'\n", stringFull);
     my_assert(strcmp(buffer, stringFull) == 0);
     printf("\tFull list: %s\n", buffer);
 
@@ -317,6 +320,8 @@ void test_list_display()
     capture_stdout(buffer, sizeof(buffer), (void (*)(Node **, Node *, Node *))list_display_range, &head, Low, High);
     my_assert(strcmp(buffer, stringRandom) == 0);
     printf("\tK random node(s): %s\n", buffer );
+    printf("Captured output: %s\n", buffer);
+    printf("Expected output: %s\n", stringFull);
 
 
     

@@ -11,7 +11,8 @@ typedef struct Node {
 
 
 void list_init(Node** head, size_t size) {
-    mem_init(2048);
+    mem_init(64000);  // Increase to 64KB to ensure enough space for all nodes
+
     *head = NULL;  // Set head to NULL to indicate an empty list
 
     // Initialize the memory pool using mem_init with the given size
@@ -29,7 +30,7 @@ void list_insert(Node** head, uint16_t data) {
 
     // Check if memory allocation was successful
     if (new_node == NULL) {
-        printf("Memory allocation failed for new node.\n");
+        //printf("Memory allocation failed for new node.\n");
         return;
     }
 
@@ -177,6 +178,11 @@ Node* list_search(Node** head, int data) {
     printf("Node with data %d not found.\n", data);
     return NULL;
 }
+/**
+ * Displays all the nodes in the list.
+ *
+ * @param head A pointer to the pointer of the head node of the list.
+ */
 void list_display(Node** head) {
     Node* current = *head;
 
@@ -195,7 +201,7 @@ void list_display(Node** head) {
     }
 
     // Print the closing bracket
-    printf("]\n");
+    printf("]");
 }
 
 
@@ -206,28 +212,26 @@ void list_display(Node** head) {
  * @param start A pointer to the first node to display.
  * @param end A pointer to the last node to display (NULL to display until the end of the list).
  */
-void list_display_range(Node** head, Node* start, Node* end) {
-    Node* temp = *head;
+void list_display_range(Node** head, Node* start_node, Node* end_node) {
+    Node* current = start_node ? start_node : *head;  // Start from start_node or head if NULL
+    printf("[");  // Start with opening bracket
 
-    // Traverse the list until we reach the start node
-    while (temp != NULL && temp != start) {
-        temp = temp->next;
-    }
+    while (current != NULL) {
+        printf("%u", current->data);  // Print current node data
 
-    if (temp == NULL) {
-        printf("Start node not found.\n");
-        return;
-    }
+        if (current == end_node) {  // Stop if we've reached end_node
+            break;
+        }
 
-    printf("[");
-    while (temp != NULL && temp != end) {
-        printf("%d", temp->data);
-        if (temp->next != NULL && temp->next != end) {
+        // Print a comma only if this is not the last node
+        if (current->next != NULL && current != end_node) {
             printf(", ");
         }
-        temp = temp->next;
+
+        current = current->next;  // Move to the next node
     }
-    printf("]\n");
+
+    printf("]");  // End with closing bracket
 }
 
 /**

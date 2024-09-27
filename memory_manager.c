@@ -25,7 +25,7 @@ Block* free_list = NULL;       // Linked list of free memory blocks
 void mem_init(size_t size) {
     memory_pool = malloc(size);
     if (memory_pool == NULL) {
-        printf("Memory pool initialization failed.\n");
+        //printf("Memory pool initialization failed.\n");
         return;
     }
 
@@ -35,18 +35,18 @@ void mem_init(size_t size) {
     free_list->is_free = true;
     free_list->next = NULL;
 
-    printf("Memory pool initialized with size: %zu bytes\n", size);
+    //printf("Memory pool initialized with size: %zu bytes\n", size);
 }
 
 
 void* mem_alloc(size_t requested_size) {
-    printf("Attempting to allocate %zu bytes\n", requested_size);
-    printf("Size of Block (metadata): %zu bytes\n", sizeof(Block));
+    //printf("Attempting to allocate %zu bytes\n", requested_size);
+    //printf("Size of Block (metadata): %zu bytes\n", sizeof(Block));
     Block* current = free_list;
 
     // Traverse the free list to find a suitable block
     while (current != NULL) {
-        printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
+        //printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
 
         // Check if the block is free and has enough space for the requested size
         if (current->is_free && current->size >= requested_size) {
@@ -69,7 +69,7 @@ void* mem_alloc(size_t requested_size) {
 
             // Mark the current block as allocated
             current->is_free = false;
-            printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
+            //printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
 
             // Return a pointer to the usable memory (just after the block metadata)
             return (char*)current + sizeof(Block);
@@ -79,7 +79,7 @@ void* mem_alloc(size_t requested_size) {
     }
 
     // If no suitable block was found, return NULL
-    printf("Memory allocation failed: no suitable block found.\n");
+    //printf("Memory allocation failed: no suitable block found.\n");
     return NULL;
 }
 
