@@ -215,7 +215,7 @@ void list_display(Node** head) {
         }
         current = current->next;
     }
-    printf("]\n");
+    printf("]");
 }
 
 /**
@@ -238,7 +238,7 @@ void list_display_range(Node** head, Node* start_node, Node* end_node) {
         }
         current = current->next;
     }
-    printf("]\n");
+    printf("]");
 }
 
 /**
