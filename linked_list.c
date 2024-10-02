@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "memory_manager.h"
 
-/**
+/**samir
  * Node structure for the singly linked list.
  * @param data: 16-bit unsigned integer stored in the node.
  * @param next: Pointer to the next node in the list.
