@@ -59,7 +59,7 @@ void* mem_alloc(size_t requested_size) {
     Block* current = free_list;
 
     while (current != NULL) {
-        printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
+    //    printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
 
         if (current->is_free && current->size >= requested_size) {
             size_t remaining_size = current->size - requested_size;
