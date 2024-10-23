@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 // Structure to represent a memory block in the pool
 typedef struct Block {
@@ -16,19 +17,23 @@ Block* head_block = NULL;  // Head of the linked list of memory blocks
 size_t memory_pool_size = 0;
 
 // Initializes the memory pool with the specified size
+// Parameters:
+// - size: the size of the memory pool to allocate.
+// Errors:
+// - Prints an error message and exits if memory allocation fails.
 void mem_init(size_t size) {
     memory_pool = malloc(size);
     if (!memory_pool) {
-        fprintf(stderr, "Memory pool allocation failed!\n");
+        perror("Memory pool allocation failed");
         exit(EXIT_FAILURE);
     }
 
     memory_pool_size = size;
 
-    // Create the initial block metadata
+    // Allocate the initial metadata block for managing the memory pool
     head_block = (Block*)malloc(sizeof(Block));
     if (!head_block) {
-        fprintf(stderr, "Block metadata allocation failed!\n");
+        perror("Block metadata allocation failed");
         free(memory_pool);
         exit(EXIT_FAILURE);
     }
@@ -40,6 +45,10 @@ void mem_init(size_t size) {
 }
 
 // Allocates a block of memory of the specified size
+// Parameters:
+// - size: the size of the memory to allocate.
+// Returns:
+// - A pointer to the allocated memory if successful, or NULL if no suitable block is found.
 void* mem_alloc(size_t size) {
     Block* current = head_block;
 
@@ -51,7 +60,7 @@ void* mem_alloc(size_t size) {
                 // Create a new metadata block for the remaining free memory
                 Block* new_block = (Block*)malloc(sizeof(Block));
                 if (!new_block) {
-                    fprintf(stderr, "New block metadata allocation failed!\n");
+                    perror("New block metadata allocation failed");
                     return NULL;
                 }
 
@@ -79,13 +88,26 @@ void* mem_alloc(size_t size) {
 }
 
 // Frees a previously allocated block of memory
+// Parameters:
+// - ptr: the pointer to the memory to be freed.
+// Errors:
+// - Ignores attempts to free NULL pointers.
+// - Prints a warning if the pointer does not correspond to any allocated block.
 void mem_free(void* ptr) {
-    if (!ptr) return;
+    if (!ptr) {
+        fprintf(stderr, "Warning: Attempted to free a NULL pointer.\n");
+        return;
+    }
 
     // Find the block metadata corresponding to the pointer
     Block* current = head_block;
     while (current != NULL) {
         if (current->ptr == ptr) {
+            if (current->is_free) {
+                fprintf(stderr, "Warning: Attempted to free an already freed block at %p.\n", ptr);
+                return;
+            }
+
             current->is_free = 1;
 
             // Coalesce adjacent free blocks to prevent fragmentation
@@ -102,9 +124,16 @@ void mem_free(void* ptr) {
 
         current = current->next;
     }
+
+    fprintf(stderr, "Warning: Pointer %p not found in the memory pool.\n", ptr);
 }
 
 // Resizes a previously allocated block of memory
+// Parameters:
+// - ptr: the pointer to the memory to resize.
+// - size: the new size for the memory block.
+// Returns:
+// - A pointer to the resized memory block if successful, or NULL if resizing fails.
 void* mem_resize(void* ptr, size_t size) {
     if (!ptr) return mem_alloc(size); // If ptr is NULL, just allocate new memory
 
@@ -128,10 +157,12 @@ void* mem_resize(void* ptr, size_t size) {
         block = block->next;
     }
 
+    fprintf(stderr, "Warning: Pointer %p not found for resizing.\n", ptr);
     return NULL;  // If the block was not found
 }
 
 // Deinitializes the memory pool and frees all associated resources
+// Frees the memory pool and all metadata structures, ensuring no memory leaks.
 void mem_deinit() {
     free(memory_pool);
     memory_pool = NULL;

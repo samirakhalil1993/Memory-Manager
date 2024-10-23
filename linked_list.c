@@ -1,179 +1,226 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
-#include <errno.h>
+#include "memory_manager.h"
 
-// Structure to represent a memory block in the pool
-typedef struct Block {
-    size_t size;           // Size of the block
-    int is_free;           // 1 if the block is free, 0 if it is allocated
-    struct Block* next;    // Pointer to the next block
-    void* ptr;             // Pointer to the memory within the pool
-} Block;
+// Definition of a singly linked list node.
+typedef struct Node {
+    uint16_t data;        // The data stored in the node.
+    struct Node* next;    // Pointer to the next node in the list.
+} Node;
 
-void* memory_pool = NULL;  // Pointer to the start of the memory pool
-Block* head_block = NULL;  // Head of the linked list of memory blocks
-size_t memory_pool_size = 0;
-
-// Initializes the memory pool with the specified size
+// Initializes a linked list and the custom memory manager.
 // Parameters:
-// - size: the size of the memory pool to allocate.
-// Errors:
-// - Prints an error message and exits if memory allocation fails.
-void mem_init(size_t size) {
-    memory_pool = malloc(size);
-    if (!memory_pool) {
-        perror("Memory pool allocation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    memory_pool_size = size;
-
-    // Allocate the initial metadata block for managing the memory pool
-    head_block = (Block*)malloc(sizeof(Block));
-    if (!head_block) {
-        perror("Block metadata allocation failed");
-        free(memory_pool);
-        exit(EXIT_FAILURE);
-    }
-
-    head_block->size = size;  // The size of the entire pool
-    head_block->is_free = 1;  // The entire pool is initially free
-    head_block->ptr = memory_pool;  // Points to the start of the pool
-    head_block->next = NULL;
+// - head: Pointer to the head pointer of the linked list.
+// - size: Size of the memory pool to be initialized.
+void list_init(Node** head, size_t size) {
+    *head = NULL;
+    mem_init(size);
 }
 
-// Allocates a block of memory of the specified size
+// Inserts a new node at the end of the list.
 // Parameters:
-// - size: the size of the memory to allocate.
-// Returns:
-// - A pointer to the allocated memory if successful, or NULL if no suitable block is found.
-void* mem_alloc(size_t size) {
-    Block* current = head_block;
+// - head: Pointer to the head pointer of the linked list.
+// - data: The data to be inserted into the new node.
+// Errors:
+// - Prints an error message if memory allocation fails.
+void list_insert(Node** head, uint16_t data) {
+    Node* new_node = (Node*) mem_alloc(sizeof(Node));
+    if (!new_node) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+    new_node->data = data;
+    new_node->next = NULL;
 
-    // Find the first free block that is large enough
-    while (current != NULL) {
-        if (current->is_free && current->size >= size) {
-            // If the block is larger than needed, split it
-            if (current->size > size) {
-                // Create a new metadata block for the remaining free memory
-                Block* new_block = (Block*)malloc(sizeof(Block));
-                if (!new_block) {
-                    perror("New block metadata allocation failed");
-                    return NULL;
-                }
-
-                new_block->size = current->size - size;
-                new_block->is_free = 1;
-                new_block->ptr = (char*)current->ptr + size;
-                new_block->next = current->next;
-
-                current->size = size;
-                current->is_free = 0;
-                current->next = new_block;
-            } else {
-                current->is_free = 0;
-            }
-
-            // Return the pointer to the allocated memory
-            return current->ptr;
+    if (*head == NULL) {
+        *head = new_node;
+    } else {
+        Node* current = *head;
+        while (current->next != NULL) {
+            current = current->next;
         }
-
-        current = current->next;
+        current->next = new_node;
     }
-
-    // If no suitable block is found, return NULL (allocation failure)
-    return NULL;
 }
 
-// Frees a previously allocated block of memory
+// Inserts a new node immediately after a given node.
 // Parameters:
-// - ptr: the pointer to the memory to be freed.
+// - prev_node: The node after which the new node should be inserted.
+// - data: The data to be inserted into the new node.
 // Errors:
-// - Ignores attempts to free NULL pointers.
-// - Prints a warning if the pointer does not correspond to any allocated block.
-void mem_free(void* ptr) {
-    if (!ptr) {
-        fprintf(stderr, "Warning: Attempted to free a NULL pointer.\n");
+// - Prints an error if the previous node is NULL.
+// - Prints an error message if memory allocation fails.
+void list_insert_after(Node* prev_node, uint16_t data) {
+    if (prev_node == NULL) {
+        printf("Previous node cannot be NULL\n");
         return;
     }
 
-    // Find the block metadata corresponding to the pointer
-    Block* current = head_block;
-    while (current != NULL) {
-        if (current->ptr == ptr) {
-            if (current->is_free) {
-                fprintf(stderr, "Warning: Attempted to free an already freed block at %p.\n", ptr);
-                return;
-            }
+    Node* new_node = (Node*) mem_alloc(sizeof(Node));
+    if (!new_node) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+    new_node->data = data;
+    new_node->next = prev_node->next;
+    prev_node->next = new_node;
+}
 
-            current->is_free = 1;
+// Inserts a new node before a given node.
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+// - next_node: The node before which the new node should be inserted.
+// - data: The data to be inserted into the new node.
+// Errors:
+// - Prints an error if the next_node is NULL.
+// - Prints an error if the specified next node is not found in the list.
+// - Prints an error message if memory allocation fails.
+void list_insert_before(Node** head, Node* next_node, uint16_t data) {
+    if (next_node == NULL) {
+        printf("Next node cannot be NULL\n");
+        return;
+    }
 
-            // Coalesce adjacent free blocks to prevent fragmentation
-            Block* next_block = current->next;
-            while (next_block != NULL && next_block->is_free) {
-                current->size += next_block->size;
-                current->next = next_block->next;
-                free(next_block);
-                next_block = current->next;
-            }
+    Node* new_node = (Node*) mem_alloc(sizeof(Node));
+    if (!new_node) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+    new_node->data = data;
 
-            return;
-        }
+    if (*head == next_node) {
+        new_node->next = *head;
+        *head = new_node;
+        return;
+    }
 
+    Node* current = *head;
+    while (current != NULL && current->next != next_node) {
         current = current->next;
     }
 
-    fprintf(stderr, "Warning: Pointer %p not found in the memory pool.\n", ptr);
+    if (current == NULL) {
+        printf("The specified next node is not in the list\n");
+        mem_free(new_node);
+        return;
+    }
+
+    new_node->next = next_node;
+    current->next = new_node;
 }
 
-// Resizes a previously allocated block of memory
+// Deletes the first node with the specified data.
 // Parameters:
-// - ptr: the pointer to the memory to resize.
-// - size: the new size for the memory block.
-// Returns:
-// - A pointer to the resized memory block if successful, or NULL if resizing fails.
-void* mem_resize(void* ptr, size_t size) {
-    if (!ptr) return mem_alloc(size); // If ptr is NULL, just allocate new memory
-
-    Block* block = head_block;
-    while (block != NULL) {
-        if (block->ptr == ptr) {
-            if (block->size >= size) {
-                // If the current block is already large enough, return the same pointer
-                return ptr;
-            } else {
-                // Allocate a new block and copy the old data to it
-                void* new_ptr = mem_alloc(size);
-                if (new_ptr) {
-                    memcpy(new_ptr, ptr, block->size);
-                    mem_free(ptr);
-                }
-                return new_ptr;
-            }
-        }
-
-        block = block->next;
+// - head: Pointer to the head pointer of the linked list.
+// - data: The data of the node to be deleted.
+// Errors:
+// - Prints an error if the list is empty.
+// - Prints an error if the data is not found in the list.
+void list_delete(Node** head, uint16_t data) {
+    if (*head == NULL) {
+        printf("List is empty\n");
+        return;
     }
 
-    fprintf(stderr, "Warning: Pointer %p not found for resizing.\n", ptr);
-    return NULL;  // If the block was not found
+    Node* current = *head;
+    Node* previous = NULL;
+
+    while (current != NULL && current->data != data) {
+        previous = current;
+        current = current->next;
+    }
+
+    if (current == NULL) {
+        printf("Data not found in the list\n");
+        return;
+    }
+
+    if (previous == NULL) {
+        *head = current->next;
+    } else {
+        previous->next = current->next;
+    }
+
+    mem_free(current);
 }
 
-// Deinitializes the memory pool and frees all associated resources
-// Frees the memory pool and all metadata structures, ensuring no memory leaks.
-void mem_deinit() {
-    free(memory_pool);
-    memory_pool = NULL;
-
-    Block* current = head_block;
+// Searches for a node with the specified data.
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+// - data: The data to search for.
+// Returns:
+// - A pointer to the node containing the data if found, otherwise NULL.
+Node* list_search(Node** head, uint16_t data) {
+    Node* current = *head;
     while (current != NULL) {
-        Block* next = current->next;
-        free(current);
-        current = next;
+        if (current->data == data) {
+            return current;
+        }
+        current = current->next;
     }
+    return NULL;
+}
 
-    head_block = NULL;
-    memory_pool_size = 0;
+// Displays all elements in the list.
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+void list_display(Node** head) {
+    Node* current = *head;
+    printf("[");
+    while (current != NULL) {
+        printf("%u", current->data);
+        if (current->next != NULL) {
+            printf(", ");
+        }
+        current = current->next;
+    }
+    printf("]");
+}
+
+// Displays elements between two nodes (inclusive).
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+// - start_node: The starting node (inclusive). If NULL, starts from the head.
+// - end_node: The ending node (inclusive). If NULL, goes until the end.
+void list_display_range(Node** head, Node* start_node, Node* end_node) {
+    Node* current = start_node ? start_node : *head;
+
+    printf("[");
+    while (current != NULL && (end_node == NULL || current != end_node->next)) {
+        printf("%d", current->data);
+        if (current->next != NULL && current != end_node) {
+            printf(", ");
+        }
+        current = current->next;
+    }
+    printf("]");
+}
+
+// Counts the number of nodes in the list.
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+// Returns:
+// - The total number of nodes in the list.
+int list_count_nodes(Node** head) {
+    int count = 0;
+    Node* current = *head;
+    while (current != NULL) {
+        count++;
+        current = current->next;
+    }
+    return count;
+}
+
+// Frees all nodes in the list and deinitializes the memory manager.
+// Parameters:
+// - head: Pointer to the head pointer of the linked list.
+void list_cleanup(Node** head) {
+    Node* current = *head;
+    while (current != NULL) {
+        Node* next_node = current->next;
+        mem_free(current);
+        current = next_node;
+    }
+    *head = NULL;
+    mem_deinit();
 }
