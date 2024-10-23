@@ -3,15 +3,14 @@
 #include "memory_manager.h"
 
 typedef struct Node {
-    uint16_t data;        // Stores the data as an unsigned 16-bit integer.
-    struct Node* next;    // A pointer to the next node in the list.
+    uint16_t data;
+    struct Node* next;
 } Node;
 
 void list_init(Node** head, size_t size) {
     *head = NULL;
-    mem_init(size); // Initialize the memory pool with the specified size.
+    mem_init(size);
 }
-
 
 void list_insert(Node** head, uint16_t data) {
     Node* new_node = (Node*) mem_alloc(sizeof(Node));
@@ -62,14 +61,12 @@ void list_insert_before(Node** head, Node* next_node, uint16_t data) {
     }
     new_node->data = data;
 
-    // If the next_node is the head, insert new_node before it.
     if (*head == next_node) {
         new_node->next = *head;
         *head = new_node;
         return;
     }
 
-    // Find the previous node of next_node.
     Node* current = *head;
     while (current != NULL && current->next != next_node) {
         current = current->next;
@@ -94,21 +91,17 @@ void list_delete(Node** head, uint16_t data) {
     Node* current = *head;
     Node* previous = NULL;
 
-    // Find the node to be deleted.
     while (current != NULL && current->data != data) {
         previous = current;
         current = current->next;
     }
 
-    // If the node was not found.
     if (current == NULL) {
         printf("Data not found in the list\n");
         return;
     }
 
-    // Remove the node.
     if (previous == NULL) {
-        // The node to be deleted is the head.
         *head = current->next;
     } else {
         previous->next = current->next;
@@ -145,7 +138,7 @@ void list_display_range(Node** head, Node* start_node, Node* end_node) {
     Node* current = start_node ? start_node : *head;
 
     printf("[");
-    while (current != NULL && (end_node == NULL || current != end_node->next)){
+    while (current != NULL && (end_node == NULL || current != end_node->next)) {
         printf("%d", current->data);
         if (current->next != NULL && current != end_node) {
             printf(", ");
@@ -173,5 +166,5 @@ void list_cleanup(Node** head) {
         current = next_node;
     }
     *head = NULL;
-    mem_deinit(); // Deinitialize the memory pool.
+    mem_deinit();
 }
