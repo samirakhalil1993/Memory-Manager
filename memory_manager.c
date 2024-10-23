@@ -1,87 +1,124 @@
-#include "memory_manager.h"
-#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include "memory_manager.h"
+#include <assert.h>
+#include <errno.h>
+#include "common_defs.h"
 
-typedef struct FreeBlock {
+typedef struct Block {
     size_t size;
-    struct FreeBlock *next;
-} FreeBlock;
+    bool is_free;
+    struct Block* next;
+} Block;
 
-static char *memory_pool = NULL;
-static char *current_position = NULL;
-static size_t total_size = 0;
-static FreeBlock *free_list = NULL;
+void* memory_pool = NULL;
+size_t memory_pool_size = 0;
+Block* free_list = NULL;
 
 void mem_init(size_t size) {
-    if (memory_pool) {
+    memory_pool = malloc(size);
+    if (memory_pool == NULL) {
+        perror("Memory pool initialization failed");
         return;
     }
 
-    memory_pool = (char *)malloc(size);
-    if (memory_pool) {
-        current_position = memory_pool;
-        total_size = size;
-        free_list = NULL;
-    }
+    memory_pool_size = size;
+    free_list = (Block*)memory_pool;
+    free_list->size = size;
+    free_list->is_free = true;
+    free_list->next = NULL;
 }
 
-void *mem_alloc(size_t size) {
-    if (!memory_pool) {
-        return NULL;
-    }
+void* mem_alloc(size_t requested_size) {
+    printf("Attempting to allocate %zu bytes\n", requested_size);
+    Block* current = free_list;
 
-    if (size == 0) {
-        return current_position;
-    }
+    while (current != NULL) {
+        printf("Checking block at %p: size=%zu, is_free=%d\n", (void*)current, current->size, current->is_free);
 
-    FreeBlock **current = &free_list;
-    while (*current) {
-        if ((*current)->size >= size) {
-            void *allocated_memory = (void *)(*current);
-            *current = (*current)->next;
-            return allocated_memory;
+        if (current->is_free && current->size >= requested_size) {
+            size_t remaining_size = current->size - requested_size;
+
+            if (remaining_size > sizeof(Block)) {
+                Block* new_block = (Block*)((char*)current + requested_size + sizeof(Block));
+                new_block->size = remaining_size;
+                new_block->is_free = true;
+                new_block->next = current->next;
+
+                current->next = new_block;
+                current->size = requested_size;
+            } else {
+                requested_size = current->size;
+            }
+
+            current->is_free = false;
+            printf("Allocated %zu bytes at %p\n", requested_size, (void*)current);
+
+            return (char*)current + sizeof(Block);
         }
-        current = &(*current)->next;
+
+        current = current->next;
     }
 
-    if (current_position + size > memory_pool + total_size) {
-        return NULL;
-    }
-
-    void *allocated_memory = current_position;
-    current_position += size;
-    return allocated_memory;
+    printf("Memory allocation failed: no suitable block found.\n");
+    return NULL;
 }
 
-void mem_free(void *ptr) {
-    if (!ptr || !memory_pool || ptr < (void *)memory_pool || ptr >= (void *)(memory_pool + total_size)) {
+void mem_free(void* block) {
+    if (block == NULL) {
         return;
     }
 
-    FreeBlock *freed_block = (FreeBlock *)ptr;
-    freed_block->next = free_list;
-    free_list = freed_block;
+    Block* current = (Block*)((char*)block - sizeof(Block));
+    current->is_free = true;
+
+    Block* next = current->next;
+    if (next != NULL && next->is_free) {
+        current->size += sizeof(Block) + next->size;
+        current->next = next->next;
+    }
+
+    Block* prev = free_list;
+    while (prev != NULL && prev->next != current) {
+        prev = prev->next;
+    }
+    if (prev != NULL && prev->is_free) {
+        prev->size += sizeof(Block) + current->size;
+        prev->next = current->next;
+    }
+
+    printf("Memory block freed and coalesced if possible.\n");
 }
 
-void *mem_resize(void *ptr, size_t new_size) {
-    if (!ptr) {
-        return mem_alloc(new_size);
+void* mem_resize(void* block, size_t size) {
+    if (block == NULL) return mem_alloc(size);
+
+    Block* current = (Block*)((char*)block - sizeof(Block));
+
+    if (current->size >= size) {
+        return block;
     }
 
-    void *new_ptr = mem_alloc(new_size);
-    if (new_ptr) {
-        memcpy(new_ptr, ptr, new_size);
-        mem_free(ptr);
+    Block* next = current->next;
+    if (next != NULL && next->is_free && (current->size + sizeof(Block) + next->size >= size)) {
+        current->size += sizeof(Block) + next->size;
+        current->next = next->next;
+        return block;
     }
 
-    return new_ptr;
+    void* new_block = mem_alloc(size);
+    if (new_block == NULL) {
+        printf("Memory resize failed: no suitable block found.\n");
+        return NULL;
+    }
+
+    memcpy(new_block, block, current->size);
+    mem_free(block);
+
+    return new_block;
 }
 
 void mem_deinit() {
-    free(memory_pool);
-    memory_pool = NULL;
-    current_position = NULL;
-    total_size = 0;
-    free_list = NULL;
+    if (memory_pool != NULL) {
+        free(memory_pool);
+    }
 }
