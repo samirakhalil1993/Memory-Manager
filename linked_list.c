@@ -13,7 +13,7 @@ void list_init(Node** head, size_t size) {
 }
 
 void list_insert(Node** head, uint16_t data) {
-    Node* new_node = (Node*) mem_alloc(sizeof(Node));
+    Node* new_node = (Node*)mem_alloc(sizeof(Node));
     if (!new_node) {
         printf("Memory allocation failed\n");
         return;
