@@ -17,7 +17,7 @@ void list_init(Node** head, size_t size) {
     mem_init(size);
 }
 
-// Inserts a new node at the end of the list.
+// Inserts a new node at the end of the list
 // Parameters:
 // - head: Pointer to the head pointer of the linked list.
 // - data: The data to be inserted into the new node.
